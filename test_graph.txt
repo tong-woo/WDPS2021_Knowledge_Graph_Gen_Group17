@@ -1,0 +1,57 @@
+Creating nodes with properties
+https://neo4j.com/docs/cypher-manual/current/clauses/create/#create-create-node-and-add-labels-and-properties
+
+Creating multiple nodes in the same query
+https://neo4j.com/docs/cypher-manual/current/clauses/create/#create-create-multiple-nodes
+
+Example to add nodes:
+CREATE (n1:Person {pid: 1, name: 'Harry Potter', title: 'Magician', book: 'Harry Potter'}), 
+(n2:Person {pid: 2, name: 'Ned Flanders', title: 'Magician', book: 'Harry Potter'}),
+(n3:Person {pid: 3, name: 'Bella Flanders', title: 'Magician', book: 'Harry Potter'})
+
+Creating a relationship between two nodes
+https://neo4j.com/docs/cypher-manual/current/clauses/create/#create-create-a-relationship-between-two-nodes
+
+Example to add relationships: 
+MATCH
+  (a:Person),
+  (b:Person),
+  (c:Person)
+WHERE a.pid = 1 AND b.pid = 2 AND c.pid = 3
+CREATE 
+    (a)-[r1:sonOf]->(b),
+    (b)-[r2:fatherOf]->(a),
+    (c)-[r3:motherOf]->(a),
+    (a)-[r4:sonOf]->(c),
+    (b)-[r5:marriedTo]->(c),
+    (c)-[r6:marriedTo]->(b)
+
+Delete all nodes from database
+https://neo4j.com/docs/cypher-manual/current/clauses/delete/#delete-delete-all-nodes-and-relationships
+
+Example:
+MATCH (n)
+DETACH DELETE n
+
+Get all books in database
+MATCH (n)
+RETURN DISTINCT n.book as books
+
+Count all nodes with an specific property
+MATCH (n)
+WHERE n.book = "Harry Potter"
+RETURN count(n) as entities
+
+Count all relationships of nodes with an specific property
+MATCH (n)-->(rel)
+WHERE n.book = "Harry Potter"
+RETURN count(rel) as relationships, count(n) as entities
+
+Get number of outgoing relationships of one node
+MATCH (p {pid: 1})-->(rel)
+RETURN count(rel)
+
+
+Get all the nodes related to one node and their relationship
+MATCH (p {pid: 1})-[r]->(rel)
+RETURN r, rel
