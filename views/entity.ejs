@@ -73,7 +73,172 @@
       </ul>
 
     </div>
+  <script src="https://d3js.org/d3.v4.min.js"></script>
+  <script type="text/javascript">
+    $('.visualization-container').append(
+        `
+        <div class="sample-detail animate__animated animate__fadeIn animate__faster" style="height: 140% !important;">
+          <div id="chartFigure" class="chart-figure" style="border: 2px solid burlywood;">    
+            </div>
+        </div>
+        `
+    );
 
+    graph = {};
+    main_node_id = "<%= searchEntity['properties']['name'] %>";
+    let relationships = <%-JSON.stringify(relationships)%>
+    graph.nodes = relationships.map((r) => {
+      return {
+        id: r["properties"]["name"]
+      }
+    });
+    graph.nodes.push({
+      id: main_node_id
+    })
+    graph.edges = relationships.map((r) => {
+      return {
+        "source": main_node_id,
+        "target": r["properties"]["name"],
+        "label": r["type"],
+        "value": 5
+      }
+    });
+
+    console.log(graph);
+
+    let width = 800;
+    let height = 500;
+    let radius = 16;
+    var svg = d3.select("#chartFigure")
+      .append("svg").attr("width", width).attr("height", height);
+    
+    var color = d3.scaleOrdinal(d3.schemeCategory20);
+    
+    var simulation = d3.forceSimulation()
+      //.force("link", d3.forceLink().id(function(d) { return d.id; }))
+      .force("charge", d3.forceManyBody())
+      .force("center", d3.forceCenter(width / 2, height / 2))
+                              // .velocityDecay(0.1)
+                          // .force("x", d3.forceX(width / 2).strength(.05))
+                          // .force("y", d3.forceY(height / 2).strength(.05))
+                          // .force("charge", d3.forceManyBody().strength(-240))
+      .force("link", d3.forceLink().distance(100).strength(1).id(function(d) { return d.id; }));
+    
+    var link = svg.append("g")
+      .attr("class", "links")
+      .selectAll("line")
+      .data(graph.edges)
+      .enter().append("line")
+      .attr("fill", "#000000")
+      .attr("stroke-width", function(d) { return 1; })
+      .attr("stroke", "#000000")
+      .attr("stroke-color", "#000000");
+    
+    // Three function that change the tooltip when user hover / move / leave a cell
+    var mouseover = function(d) {
+      d3.select(this)
+        .style("opacity", 1);
+    }
+    var mousemove = function(d) {
+      d3.select(".graph-tooltip").style('background-color', color(0));
+    }
+    var mouseleave = function(d) {
+      d3.select(this)
+        .style("stroke", "none")
+        .style("opacity", 0.8)
+    }
+    
+    var node = svg.append("g")
+      .attr("class", "nodes")
+      .selectAll("g")
+      .data(graph.nodes)
+      .enter().append("g")
+      .on("mouseover", mouseover)
+      .on("mousemove", mousemove)
+      .on("mouseleave", mouseleave)
+
+    var minRadius = 5;
+    var maxRadius = 17;
+    var scale = d3.scaleSqrt().domain( [minRadius, maxRadius] ).range([minRadius,maxRadius]);
+    
+    node.append("circle")
+      // .attr("r", function(d) { 
+      //     return scale(radius);
+      // })
+      .attr("r", radius)
+      .attr("fill", function(d) { return color(0); });
+    
+    // Create a drag handler and append it to the node object instead
+    var drag_handler = d3.drag()
+      .on("start", dragstarted)
+      .on("drag", dragged)
+      .on("end", dragended);
+    
+    drag_handler(node);
+    
+    node.append("text")
+      .text(function(d) {
+        return d.id;
+      })
+      .attr("fill", '#000000')
+      .attr('x', 6)
+      .attr('y', 3);
+
+    link.append("text")
+      .text(function(d) { return d.label; })
+      .attr('x', 6)
+      .attr('y', 3)
+      .attr("fill", '#000000');
+    
+    node.append("title")
+      .text(function(d) { return d.id; });
+
+    link.append("title")
+      .text(function(d) { return d.label; });
+    
+    simulation
+      .nodes(graph.nodes)
+      .on("tick", ticked);
+    
+    simulation.force("link")
+      .links(graph.edges);
+    
+      function ticked() {
+              node.attr("transform", function(d) { 
+                  d.x = Math.max(radius, Math.min(width - radius, d.x));
+                  return "translate(" + d.x + "," + d.y + ")";
+                })
+              .attr("transform", function(d) { 
+                  d.y = Math.max(radius, Math.min(height - radius, d.y)); 
+                  return "translate(" + d.x + "," + d.y + ")";
+                });
+      
+          link.attr("x1", function(d) { return d.source.x; })
+              .attr("y1", function(d) { return d.source.y; })
+              .attr("x2", function(d) { return d.target.x; })
+              .attr("y2", function(d) { return d.target.y; });
+          }
+
+
+    
+    function dragstarted(d) {
+      if (!d3.event.active) simulation.alphaTarget(0.3).restart();
+      d.fx = d.x;
+      d.fy = d.y;
+    }
+    
+    function dragged(d) {
+      d.fx = d3.event.x;
+      d.fy = d3.event.y;
+    }
+    
+    function dragended(d) {
+      if (!d3.event.active) simulation.alphaTarget(0);
+      d.fx = null;
+      d.fy = null;
+    }
+    
+  </script>
   </body>
 </html>
 
