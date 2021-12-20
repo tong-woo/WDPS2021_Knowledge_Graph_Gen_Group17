@@ -53,8 +53,8 @@ router.get('/query/book/', (req, res, next) => {
     });
     return res.render('book', {
       bookId,
-      numEntities: relationships,
-      numRelationships: entities
+      numEntities: entities,
+      numRelationships: relationships
     });
   })
   .catch((error) => {
@@ -69,19 +69,19 @@ router.get('/query/entity/', function(req, res, next){
     entityId
   } = req.query;
 
-  const params = {limit: "10"};
-  // QUERY NEO4J for bookId - entityId relationships
-
+  // QUERY NEO4J for entityId relationships
   const query = `  
     MATCH (p {pid: ${entityId}})-[r]->(rel)
-    RETURN r, rel
+    RETURN r, rel, p
   `;
 
   session.run(query, {}).then((result) => {
     let relationships = [];
+    let searchEntity;
     result.records.forEach((record) => {
       let r = record.get('r');
       let entity = record.get('rel');
+      searchEntity = record.get('p');
       relationships.push({
         ...entity,
         type: r.type,
@@ -90,7 +90,8 @@ router.get('/query/entity/', function(req, res, next){
     return res.render('entity', {
       bookId, 
       entityId, 
-      relationships
+      relationships,
+      searchEntity
     })
   })
   .catch((error) => {
