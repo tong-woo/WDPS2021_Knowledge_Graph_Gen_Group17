@@ -31,8 +31,8 @@ router.get('/', (req, res, next) => {
 });
 
 router.get('/query', (req, res, next) => {
-  query = `
   // QUERY NEO4J for books data
+  query = `
     MATCH (n)
     RETURN DISTINCT n.book as books
   `

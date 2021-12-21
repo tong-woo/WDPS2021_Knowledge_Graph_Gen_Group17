@@ -1,5 +1,6 @@
 # pip3 install neo4j-driver
 from neo4j import GraphDatabase, basic_auth
+import os
 
 try:
     NEO_HOST = os.environ['NEO_HOST']
