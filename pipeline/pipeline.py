@@ -14,7 +14,7 @@ def _clean_text(raw_text):
 def _build_graph(triplets, book_name):
     return build_graph(triplets, book_name)
     
-
+# python ./pipeline.py "./books/book.txt" "Test Book 1"
 if __name__ == '__main__':
     import sys
     try:
