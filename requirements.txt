@@ -1,0 +1,4 @@
+neo4j==4.4.1
+requests==2.26.0
+scipy==1.7.3
+spacy==3.2.0
