@@ -14,8 +14,8 @@ router.get('/', (req, res, next) => {
 });
 
 router.get('/query', (req, res, next) => {
-  // QUERY NEO4J for books data
   query = `
+  // QUERY NEO4J for books data
     MATCH (n)
     RETURN DISTINCT n.book as books
   `
@@ -98,6 +98,40 @@ router.get('/query/entity/', function(req, res, next){
     console.error(error);
     return res.render('error', { error, message: 'Error' })
   });
+})
+
+router.get('/query/book/graph', function(req, res, next) {
+  let {
+    bookId
+  } = req.query;
+
+  // QUERY NEO4J for entityId relationships
+  const query = `  
+    MATCH (n)-[r]->(rel)
+    WHERE n.book = "${bookId}"
+    RETURN DISTINCT(r), rel, n
+  `;
+
+  session.run(query, {}).then((result) => {
+    let relationships = [];
+    result.records.forEach((record) => {
+      let r = record.get('r');
+      let entity = record.get('rel');
+      let searchEntity = record.get('n');
+      relationships.push({
+        source: entity,
+        type: r.type,
+        target: searchEntity
+      });
+    });
+    return res.status(200).json({
+      relationships
+    })
+  })
+  .catch((error) => {
+    console.error(error);
+    return res.status(500).json(error)
+  });  
 })
 
 router.get('/query/search/', function(req, res, next){

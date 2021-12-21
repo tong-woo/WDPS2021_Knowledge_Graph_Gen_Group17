@@ -3,6 +3,13 @@ html, body{
  background: #fff;
     font-family: 'Lato', sans-serif;
 }
+body{
+	display: flex;
+    flex-direction: column;
+    align-items: center;
+	width: 100%;
+}
+
 body a,.menu ul li a,.album  {
 	transition:0.5s all;
 	-webkit-transition:0.5s all;
@@ -369,8 +376,10 @@ ul.top-icons li a.drib{
     -o-background-size:cover;
     -ms-background-size:cover;
     min-height:700px;
+	width: 100%;
 }
 .banner-1 {
+	width: 100%;
     background: url(/images/wdps1.png) no-repeat 0px 0px;
     background-size:cover;
     -webkit-background-size:cover;
@@ -682,6 +691,7 @@ ul.top-icons li a.drib{
 .w3ls {
     background: #253b50;
     padding: 0px 0 40px;
+	width: 100%;
 }
 .w3ls-left h3 ,.w3ls-right h3{
     font-size: 25px;
@@ -973,6 +983,7 @@ h2.tittle {
 .team {
   background: #f4f4f4;
   padding:5em 0;
+  width: 100%;
 }
 .main {
     margin-top: 2.5em;
@@ -2169,6 +2180,8 @@ h2.tit, h3.tit {
 }
 .w3ls {
     padding: 60px 0 30px;
+	width: 100%;
+	width: 100%;
 }
 .copy-right {
     padding-top: 30px;
@@ -3452,6 +3465,7 @@ h2.tit, h3.tit {
 }
 .w3ls {
     padding: 30px 0 16px;
+	width: 100%;
 }
 .copy-right {
     padding-top: 16px;
@@ -3615,7 +3629,6 @@ h2.tit, h3.tit {
 }
 
 .search-box{
-  width: 300px;
   position: relative;
   display: flex;
 }
@@ -3900,4 +3913,26 @@ border-left: 4px solid #111d5e;
 		background-color: var(--white);
 		transform: translate3d(0,0,1px) rotateY(0);
 	}
+}
+
+.book-box{
+  padding: 16px;
+}
+
+.visualization-container-entity{
+	width: 100%;
+	padding-top: 32px;
+    padding-left: 16px;
+	padding-right: 16px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: stretch;
+}
+
+.visualization-container{
+	box-shadow: 0 10px 20px rgba(0,0,0,0.19), 0 6px 6px rgba(0,0,0,0.23);
+	width: 95% !important;
+	margin: 32px !important;
+	box-sizing: border-box;
 }

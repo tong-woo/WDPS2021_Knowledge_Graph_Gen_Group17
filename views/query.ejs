@@ -59,7 +59,7 @@
     </div>
 
     <div class="visualization-container" style="width: 100%; padding: 64px;">
-      <h3 style="margin-bottom:16px;"> Select a book to discover:</h3>
+      <h3 style="margin-bottom:16px;"> <span class="glyphicon glyphicon-book" aria-hidden="true"></span> Select a book to discover:</h3>
       <% for(var i=0; i < books.length; i++) { %>
         <h1> <a href="/query/book/?bookId=<%=books[i]%>"> <%= books[i] %> </a> </h1>
       <% } %>

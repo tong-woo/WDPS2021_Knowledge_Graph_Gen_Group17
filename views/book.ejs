@@ -59,35 +59,35 @@
       </div>
     </div>
 
-    <div class="visualization-container" style="width: 100%; padding: 64px;">
+    <div class="visualization-container-entity">
+      <div class="book-box" style="box-shadow: 0 10px 20px rgba(0,0,0,0.19), 0 6px 6px rgba(0,0,0,0.23); min-width: 30%; max-width: 30%;">
+        <h5 style="margin-bottom:32px;"><a href="/query"> <span class="glyphicon glyphicon-arrow-left" aria-hidden="true"></span> Back to books </a></h5>
 
-      <h5 style="margin-bottom:32px;"><a href="/query"> Back to books </a></h5>
+        <h1 style="margin-bottom:8px;"><span class="glyphicon glyphicon-book" aria-hidden="true" style="padding-right: 8px;"></span> <%= bookId %></h1>
+        <h2 style="margin-bottom:8px;"> <span class="glyphicon glyphicon-user" aria-hidden="true" style="padding-right: 8px;"></span><%= numEntities %> characters </h2>
+        <h2 style="margin-bottom:32px;"> <span class="glyphicon glyphicon-link" aria-hidden="true" style="padding-right: 8px;"> </span><%= numRelationships %> relationships between characters </h2>
 
-      <h1 style="margin-bottom:8px;">Book: <%= bookId %></h1>
-      <h2 style="margin-bottom:8px;"><%= numEntities %> characters </h2>
-      <h2 style="margin-bottom:32px;"><%= numRelationships %> relationships between characters </h2>
+        <h4 style="margin-bottom:16px;"> Search for characters:</h4>
 
-      <h4 style="margin-bottom:16px;"> Search for characters:</h4>
+        <div class="search-box">
+            <input type="text" class="search-input" placeholder="Search...">
+            <button class="search-button">
+              <i class="fas fa-search"></i>
+            </button>
+        </div>
 
-      <div class="search-box">
-          <input type="text" class="search-input" placeholder="Search...">
-          <button class="search-button">
-            <i class="fas fa-search"></i>
-          </button>
+        <ul id="search-results" style="margin-left: 32px; margin-top: 16px;">
+        </ul>
+
+        <div class="book" style="opacity: 0; margin-top: 16px; margin-left: 8px;">
+          <div class="book__pg-shadow"></div>
+          <div class="book__pg"></div>
+          <div class="book__pg book__pg--2"></div>
+          <div class="book__pg book__pg--3"></div>
+          <div class="book__pg book__pg--4"></div>
+          <div class="book__pg book__pg--5"></div>
+        </div>
       </div>
-
-      <ul id="search-results" style="margin-left: 32px; margin-top: 16px;">
-      </ul>
-
-      <div class="book" style="opacity: 0; margin-top: 16px; margin-left: 8px;">
-        <div class="book__pg-shadow"></div>
-        <div class="book__pg"></div>
-        <div class="book__pg book__pg--2"></div>
-        <div class="book__pg book__pg--3"></div>
-        <div class="book__pg book__pg--4"></div>
-        <div class="book__pg book__pg--5"></div>
-      </div>
-
     </div>
 
   <script type="text/javascript">
@@ -95,9 +95,9 @@
       $('#search-results').empty();
       $('.book').css('opacity', 1);
       let bookId = "<%= bookId %>";
-      console.log(bookId);
+      //console.log(bookId);
       let searchQ = $('.search-input').val();
-      console.log(searchQ);
+      //console.log(searchQ);
       $.get( "/query/search", {
         q: searchQ,
         bookId
@@ -117,8 +117,255 @@
         `);
       });
     })
-
   </script>
+  <script src="https://d3js.org/d3.v4.min.js"></script>
+  <script src="https://d3js.org/d3-selection-multi.v1.min.js"></script>
+  <script type="text/javascript">
+
+    $(document).ready(() => {
+      let bookId = "<%= bookId %>";
+      $.get( "/query/book/graph", {
+        bookId
+      }, ( data ) => {
+        $('.book').css('opacity', 0);
+        let {  
+          relationships
+        } = data;
+
+        $('.visualization-container-entity').append(
+            `
+            <div class="book-box sample-detail animate__animated animate__fadeIn animate__faster" style="width: 70% !important; height: 400px;">
+              <div id="chartFigure" class="chart-figure" style=" height: 100%; width: 100%; box-shadow: 0 10px 20px rgba(0,0,0,0.19), 0 6px 6px rgba(0,0,0,0.23);">    
+              </div>
+            </div>
+            `
+        );
+
+        graph = {};
+        let nodeIds = new Set();
+        relationships.map((r) => {
+          nodeIds.add(r.source.properties.name);
+          nodeIds.add(r.target.properties.name);
+        });
+        graph.nodes = Array.from(nodeIds).map((n) => { return { id: n}});
+        graph.edges = relationships.map((r) => {
+          return {
+            "source":  r.source.properties.name,
+            "target": r.target.properties.name,
+            "label": r["type"],
+            "value": 5
+          }
+        });
+
+        //console.log(graph);
+
+        let width = $("#chartFigure").outerWidth();// 400;
+        let height = $("#chartFigure").outerHeight();// 600;
+        //console.log(width, height);
+        let radius = 16;
+        var svg = d3.select("#chartFigure")
+          .append("svg")
+          // .attr("width", width)
+          // .attr("height", height)
+          .attr("preserveAspectRatio", "xMinYMin meet")
+          .attr("viewBox", `0 0 ${width} ${height}`);
+
+          svg.append('defs').append('marker')
+        // .attrs({'id':'arrowhead',
+        //     'viewBox':'-0 -5 10 10',
+        //     'refX':20,
+        //     'refY':0,
+        //     'orient':'auto',
+        //     'markerWidth':13,
+        //     'markerHeight':13,
+        //     'xoverflow':'visible'})
+        // .append('svg:path')
+        // .attr('d', 'M 0,-5 L 10 ,0 L 0,5')
+        // .attr('fill', '#999')
+        // .style('stroke','none');
+        
+        var color = d3.scaleOrdinal(d3.schemeCategory20);
+        
+        var simulation = d3.forceSimulation()
+          //.force("link", d3.forceLink().id(function(d) { return d.id; }))
+          .force("charge", d3.forceManyBody())
+          .force("center", d3.forceCenter(width / 2, height / 2))
+                                  // .velocityDecay(0.1)
+                              // .force("x", d3.forceX(width / 2).strength(.05))
+                              // .force("y", d3.forceY(height / 2).strength(.05))
+                              // .force("charge", d3.forceManyBody().strength(-240))
+          .force("link", d3.forceLink().distance(100).strength(1).id(function(d) { return d.id; }));
+        
+        var link = svg.append("g")
+          .attr("class", "links")
+          .selectAll("line")
+          .data(graph.edges)
+          .enter().append("line")
+          .attr("fill", "#000000")
+          .attr("stroke-width", function(d) { return 1; })
+          //.attr('marker-end','url(#arrowhead)')
+          .attr("stroke", "#000000")
+          .attr("stroke-color", "#000000");
+        
+        // Three function that change the tooltip when user hover / move / leave a cell
+        var mouseover = function(d) {
+          d3.select(this)
+            .style("opacity", 1);
+        }
+        var mousemove = function(d) {
+          d3.select(".graph-tooltip").style('background-color', color(0));
+        }
+        var mouseleave = function(d) {
+          d3.select(this)
+            .style("stroke", "none")
+            .style("opacity", 0.8)
+        }
+        
+        var node = svg.append("g")
+          .attr("class", "nodes")
+          .selectAll("g")
+          .data(graph.nodes)
+          .enter().append("g")
+          .on("mouseover", mouseover)
+          .on("mousemove", mousemove)
+          .on("mouseleave", mouseleave)
+
+        var minRadius = 5;
+        var maxRadius = 17;
+        var scale = d3.scaleSqrt().domain( [minRadius, maxRadius] ).range([minRadius,maxRadius]);
+        
+        node.append("circle")
+          // .attr("r", function(d) { 
+          //     return scale(radius);
+          // })
+          .attr("r", radius)
+          .attr("fill", function(d) { return color(0); });
+        
+        // Create a drag handler and append it to the node object instead
+        var drag_handler = d3.drag()
+          .on("start", dragstarted)
+          .on("drag", dragged)
+          .on("end", dragended);
+        
+        drag_handler(node);
+        
+        node.append("text")
+          .text(function(d) {
+            return d.id;
+          })
+          .attr("fill", '#000000')
+          .attr('x', 6)
+          .attr('y', 3);
+
+        link.append("text")
+          .text(function(d) { return d.label; })
+          .attr('x', 6)
+          .attr('y', 3)
+          .attr("fill", '#000000');
+        
+        node.append("title")
+          .text(function(d) { return d.id; });
+
+        link.append("title")
+          .text(function(d) { return d.label; });
+        
+        simulation
+          .nodes(graph.nodes)
+          .on("tick", ticked);
+        
+        simulation.force("link")
+          .links(graph.edges);
+
+
+        edgepaths =svg.selectAll(".edgepath")
+        .data(graph.edges)
+        .enter()
+        .append('path')
+        .attrs({'d': function(d) {return 'M '+d.source.x+' '+d.source.y+' L '+ d.target.x +' '+d.target.y},
+              'class':'edgepath',
+              'fill-opacity':0,
+              'stroke-opacity':0,
+              'fill':'green',
+              'stroke':'yellow',
+              'id':function(d,i) {return 'edgepath'+i}})
+        //.style("pointer-events", "none");
+
+        edgelabels =svg.selectAll(".edgelabel")
+        .data(graph.edges)
+        .enter()
+        .append('text')
+        .style("pointer-events", "none")
+        .attrs({'class':'edgelabel',
+          'id':function(d,i){return 'edgelabel'+i},
+          'dx':25,
+          'dy':0,
+          'font-size':12,
+          'fill':'black'});
+
+        edgelabels.append('textPath')
+        .attr('xlink:href',function(d,i) {return '#edgepath'+i})
+        .style("pointer-events", "none")
+        .text(function(d,i){return d.label});
+
+          function ticked() {
+                  node.attr("transform", function(d) { 
+                      d.x = Math.max(radius, Math.min(width - radius, d.x));
+                      return "translate(" + d.x + "," + d.y + ")";
+                    })
+                  .attr("transform", function(d) { 
+                      d.y = Math.max(radius, Math.min(height - radius, d.y)); 
+                      return "translate(" + d.x + "," + d.y + ")";
+                    });
+          
+              link.attr("x1", function(d) { return d.source.x; })
+                  .attr("y1", function(d) { return d.source.y; })
+                  .attr("x2", function(d) { return d.target.x; })
+                  .attr("y2", function(d) { return d.target.y; });
+
+                  edgepaths.attr('d', function(d) { 
+                    var path='M '+d.source.x+' '+d.source.y+' L '+ d.target.x +' '+d.target.y;
+                    //console.log(d)
+                    return path});
+
+
+
+                edgelabels.attr('transform',function(d,i){
+                    if (d.target.x<d.source.x){
+                        bbox = this.getBBox();
+                        rx = bbox.x+bbox.width/2;
+                        ry = bbox.y+bbox.height/2;
+                        return 'rotate(180 '+rx+' '+ry+')';
+                    }
+                    else {
+                        return 'rotate(0)';
+                    }
+                });
+
+              }
+
+
+        
+        function dragstarted(d) {
+          if (!d3.event.active) simulation.alphaTarget(0.3).restart();
+          d.fx = d.x;
+          d.fy = d.y;
+        }
+        
+        function dragged(d) {
+          d.fx = d3.event.x;
+          d.fy = d3.event.y;
+        }
+        
+        function dragended(d) {
+          if (!d3.event.active) simulation.alphaTarget(0);
+          d.fx = null;
+          d.fy = null;
+        }
+      });
+    })
+    
+  </script> 
+  
   </body>
 </html>
 

@@ -58,28 +58,30 @@
       </div>
     </div>
 
-    <div class="visualization-container" style="width: 100%; padding: 64px;">
+    <div class="visualization-container-entity">
+      <div class="book-box" style="box-shadow: 0 10px 20px rgba(0,0,0,0.19), 0 6px 6px rgba(0,0,0,0.23); min-width: 30%; max-width: 30%;">
+        <h5 style="margin-bottom:32px;"><a href="/query/book/?bookId=<%=bookId%>"> <span class="glyphicon glyphicon-arrow-left" aria-hidden="true"></span> Back to search </a></h5>
 
-      <h5 style="margin-bottom:32px;"><a href="/query/book/?bookId=<%=bookId%>"> Back to search </a></h5>
-
-      <h2 style="margin-bottom:8px;">Character: <%= searchEntity['properties']['name'] %> </h2>
-      <h2 style="margin-bottom:8px;">Book: <%= bookId %></h2>
-      <h3 style="margin-bottom:8px;">Relationships in the book:</h3>
-
-      <ul style="margin-left: 32px;">
-        <% for(var i=0; i < relationships.length; i++) { %>
-          <li><div> <%= relationships[i]["type"] %>: <a style="text-decoration:underline;" href="/query/entity/?bookId=<%=bookId%>&entityId=<%=relationships[i]['properties']['pid']%>"><%= relationships[i]["properties"]["name"] %></a> </div></li>
-        <% } %>
-      </ul>
+        <h2 style="margin-bottom:8px;"> <span class="glyphicon glyphicon-user" aria-hidden="true"></span> <%= searchEntity['properties']['name'] %> </h2>
+        <h2 style="margin-bottom:8px;"> <span class="glyphicon glyphicon-book" aria-hidden="true"></span> <%= bookId %></h2>
+        <h3 style="margin-bottom:8px;">Interactions:</h3>
+  
+        <ul style="margin-left: 32px;">
+          <% for(var i=0; i < relationships.length; i++) { %>
+            <li><div> <%= relationships[i]["type"] %>: <a style="text-decoration:underline;" href="/query/entity/?bookId=<%=bookId%>&entityId=<%=relationships[i]['properties']['pid']%>"><%= relationships[i]["properties"]["name"] %></a> </div></li>
+          <% } %>
+        </ul>
+      </div>
 
     </div>
   <script src="https://d3js.org/d3.v4.min.js"></script>
+  <script src="https://d3js.org/d3-selection-multi.v1.min.js"></script>
   <script type="text/javascript">
-    $('.visualization-container').append(
+    $('.visualization-container-entity').append(
         `
-        <div class="sample-detail animate__animated animate__fadeIn animate__faster" style="height: 140% !important;">
-          <div id="chartFigure" class="chart-figure" style="border: 2px solid burlywood;">    
-            </div>
+        <div class="book-box sample-detail animate__animated animate__fadeIn animate__faster" style="width: 70% !important; height: 400px;">
+          <div id="chartFigure" class="chart-figure" style=" height: 100%; width: 100%; box-shadow: 0 10px 20px rgba(0,0,0,0.19), 0 6px 6px rgba(0,0,0,0.23);">    
+          </div>
         </div>
         `
     );
@@ -104,13 +106,32 @@
       }
     });
 
-    console.log(graph);
+    //console.log(graph);
 
-    let width = 800;
-    let height = 500;
+    let width = $("#chartFigure").outerWidth();// 400;
+    let height = $("#chartFigure").outerHeight();// 600;
+    //console.log(width, height);
     let radius = 16;
     var svg = d3.select("#chartFigure")
-      .append("svg").attr("width", width).attr("height", height);
+      .append("svg")
+      // .attr("width", width)
+      // .attr("height", height)
+      .attr("preserveAspectRatio", "xMinYMin meet")
+      .attr("viewBox", `0 0 ${width} ${height}`);
+
+      svg.append('defs').append('marker')
+        .attrs({'id':'arrowhead',
+            'viewBox':'-0 -5 10 10',
+            'refX':20,
+            'refY':0,
+            'orient':'auto',
+            'markerWidth':13,
+            'markerHeight':13,
+            'xoverflow':'visible'})
+        .append('svg:path')
+        .attr('d', 'M 0,-5 L 10 ,0 L 0,5')
+        .attr('fill', '#999')
+        .style('stroke','none');
     
     var color = d3.scaleOrdinal(d3.schemeCategory20);
     
@@ -131,6 +152,7 @@
       .enter().append("line")
       .attr("fill", "#000000")
       .attr("stroke-width", function(d) { return 1; })
+      .attr('marker-end','url(#arrowhead)')
       .attr("stroke", "#000000")
       .attr("stroke-color", "#000000");
     
@@ -193,6 +215,7 @@
     node.append("title")
       .text(function(d) { return d.id; });
 
+
     link.append("title")
       .text(function(d) { return d.label; });
     
@@ -202,6 +225,37 @@
     
     simulation.force("link")
       .links(graph.edges);
+
+      edgepaths =svg.selectAll(".edgepath")
+        .data(graph.edges)
+        .enter()
+        .append('path')
+        .attrs({'d': function(d) {return 'M '+d.source.x+' '+d.source.y+' L '+ d.target.x +' '+d.target.y},
+              'class':'edgepath',
+              'fill-opacity':0,
+              'stroke-opacity':0,
+              'fill':'green',
+              'stroke':'yellow',
+              'id':function(d,i) {return 'edgepath'+i}})
+        //.style("pointer-events", "none");
+
+        edgelabels =svg.selectAll(".edgelabel")
+        .data(graph.edges)
+        .enter()
+        .append('text')
+        .style("pointer-events", "none")
+        .attrs({'class':'edgelabel',
+          'id':function(d,i){return 'edgelabel'+i},
+          'dx':25,
+          'dy':0,
+          'font-size':12,
+          'fill':'black'});
+
+        edgelabels.append('textPath')
+        .attr('xlink:href',function(d,i) {return '#edgepath'+i})
+        .style("pointer-events", "none")
+        .text(function(d,i){return d.label});
+
     
       function ticked() {
               node.attr("transform", function(d) { 
@@ -217,7 +271,27 @@
               .attr("y1", function(d) { return d.source.y; })
               .attr("x2", function(d) { return d.target.x; })
               .attr("y2", function(d) { return d.target.y; });
-          }
+
+              edgepaths.attr('d', function(d) { 
+                    var path='M '+d.source.x+' '+d.source.y+' L '+ d.target.x +' '+d.target.y;
+                    //console.log(d)
+                    return path});
+
+
+
+                edgelabels.attr('transform',function(d,i){
+                    if (d.target.x<d.source.x){
+                        bbox = this.getBBox();
+                        rx = bbox.x+bbox.width/2;
+                        ry = bbox.y+bbox.height/2;
+                        return 'rotate(180 '+rx+' '+ry+')';
+                    }
+                    else {
+                        return 'rotate(0)';
+                    }
+                });
+            
+    }
 
 
     
