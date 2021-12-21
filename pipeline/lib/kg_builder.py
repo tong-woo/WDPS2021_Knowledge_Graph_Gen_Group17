@@ -1,11 +1,16 @@
 # pip3 install neo4j-driver
 from neo4j import GraphDatabase, basic_auth
 
+driver = GraphDatabase.driver(
+    "bolt://3.87.72.8:7687",
+    auth=basic_auth("neo4j", "cardboard-properties-beaches"))
+
+def chunks(lst, n):
+    """Yield successive n-sized chunks from lst."""
+    for i in range(0, len(lst), n):
+        yield lst[i:i + n]
 
 def get_graph_n_nodes(triplets, book_name):
-    driver = GraphDatabase.driver(
-        "bolt://3.87.72.8:7687",
-        auth=basic_auth("neo4j", "cardboard-properties-beaches"))
 
     with driver.session(database="neo4j") as session:
         results = session.read_transaction(
@@ -39,11 +44,6 @@ def build_graph(triplets, book_name):
         },
         {
             'source': 'Bella Potter',
-            'target': 'Harry Potter',
-            'relationship': 'MOTHER_OF'
-        },
-        {
-            'source': 'Bella Potter',
             'target': 'Ned Potter',
             'relationship': 'MARRIED_TO'
         },
@@ -53,15 +53,60 @@ def build_graph(triplets, book_name):
             'relationship': 'MARRIED_TO'
         }
     ]
-    # Need to add a unique ID to each node (source + target) in the array
-    # Need to add book name to each node in the array
-
-    # Need to add unique ID to each node, and need to add book name to each node in the query
-    # Check if this works
-    with driver.session() as session:
+    prepared_triplets = []
+    nodesPid = {}
+    current_pid = 1
+    for triplet in triplets:
+        if triplet["source"] not in nodesPid:
+            nodesPid[triplet["source"]] = current_pid
+            current_pid += 1
+        if triplet["target"] not in nodesPid:
+            nodesPid[triplet["target"]] = current_pid
+            current_pid += 1
+        prepared_triplets.append({
+            "source": triplet["source"],
+            "target": triplet["target"],
+            "relationship": triplet["relationship"],
+            "source_pid": nodesPid[triplet["source"]],
+            "target_pid": nodesPid[triplet["target"]],
+            "book": book_name
+        })
+    
+    with driver.session(database="neo4j") as session:
         session.run("""
             UNWIND $data as row
-            MERGE (c:Character{name:row.source})
-            MERGE (t:Character{name:row.target})
-            MERGE (c)-[i:row.relation]->(t)
-        """, {'data': data})
+            MERGE (c:Character{name:row.source, book:row.book, pid:row.source_pid})
+            MERGE (t:Character{name:row.target, book:row.book, pid:row.target_pid})
+        """, {'data': prepared_triplets})
+
+        for chunk in chunks(prepared_triplets, 100):
+            characters = []
+            ids = []
+            rels = []
+            mapping = {}
+            for nodePid in nodesPid.keys():
+                characters.append("(a" + str(nodesPid[nodePid]) + ":Character)")
+                ids.append("a" + str(nodesPid[nodePid]) + ".pid = " + str(nodesPid[nodePid]) + " AND " + "a" + str(nodesPid[nodePid]) + '.book = "' + book_name + '"')      
+            for i, rel in enumerate(chunk):
+                n1 = "a" + str(rel["source_pid"])
+                n2 = "a" + str(rel["target_pid"])
+                rels.append("(" + n1 + ")-[r" + str(i) + ":" + rel["relationship"] + "]->(" + n2 + ")" )
+            print ("""
+                MATCH
+                    """+ ",".join(characters) +"""
+                WHERE """ + " AND ".join(ids) + """
+                CREATE 
+                    """ + ",".join(rels) +"""
+            """)
+            session.run("""
+                MATCH
+                    """+ ",".join(characters) +"""
+                WHERE """ + " AND ".join(ids) + """
+                CREATE 
+                    """ + ",".join(rels) +"""
+            """)
+
+    driver.close()
+
+if __name__ == '__main__':
+    build_graph([], "Test Book 5")

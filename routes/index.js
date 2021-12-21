@@ -1,6 +1,20 @@
 const express = require('express');
+var path = require('path');
 const router = express.Router();
-const neo4j = require('neo4j-driver')
+const neo4j = require('neo4j-driver');
+const multer = require("multer");
+const {spawn} = require('child_process');
+
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, path.join(__dirname, '..', 'pipeline', 'books'))
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '.txt'
+    cb(null, file.fieldname + '-' + uniqueSuffix)
+  }
+});
+const upload = multer({ storage: storage });
 
 const driver = neo4j.driver('bolt://3.87.72.8:7687',
                   neo4j.auth.basic('neo4j', 'cardboard-properties-beaches'), 
@@ -72,6 +86,7 @@ router.get('/query/entity/', function(req, res, next){
   // QUERY NEO4J for entityId relationships
   const query = `  
     MATCH (p {pid: ${entityId}})-[r]->(rel)
+    WHERE p.book = "${bookId}"
     RETURN r, rel, p
   `;
 
@@ -166,5 +181,32 @@ router.get('/query/search/', function(req, res, next){
     return res.status(500).json(error)
   });
 })
+
+router.post("/uploadFile", upload.single("myFile"), (req, res, next) => { // myFile should be the same value as used in HTML name attribute of input
+  const file = req.file; // We get the file in req.file
+  const bookName = req.body.bookName;
+  if (!file) { // in case we do not get a file we return
+    const error = new Error("Please upload a file");
+    error.httpStatusCode = 400;
+    return next(error);
+  }
+
+  if (!bookName){
+    const error = new Error("Please enter a book name");
+    error.httpStatusCode = 400;
+    return next(error);
+  }
+
+  const script_path = path.join(__dirname, '..', 'pipeline', 'pipeline.py');
+  const file_path = path.join(__dirname, '..', 'pipeline', 'books', file.filename);
+  console.log(file_path);
+  const python = spawn('python', [script_path, file_path, bookName]);
+  python.on('close', (code) => {
+    console.log('Finish!', code);
+    // send data to browser
+    res.redirect('/query')
+  });
+});
+
 
 module.exports = router;

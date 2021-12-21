@@ -63,6 +63,13 @@
       <% for(var i=0; i < books.length; i++) { %>
         <h1> <a href="/query/book/?bookId=<%=books[i]%>"> <%= books[i] %> </a> </h1>
       <% } %>
+
+      <h3 style="margin-bottom:16px; margin-top: 32px;"> <span class="glyphicon glyphicon-cloud-upload" aria-hidden="true"></span> Or upload your own book:</h3>
+      <form action="/uploadFile" enctype="multipart/form-data" method="POST">
+        <input type="file" name="myFile" accept=".txt"/> <br />
+        <input type="text" name="bookName" placeholder="Enter a book name"/> <br /><br />
+        <input type="submit" value="Submit" />
+      </form>
     </div>
 
   </body>
