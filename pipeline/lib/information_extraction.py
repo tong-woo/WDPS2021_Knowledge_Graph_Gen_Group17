@@ -30,11 +30,11 @@ CARDINAL:    Numerals that do not fall under another type.
 """
 # Load English tokenizer, tagger, parser and NER
 try:
-    nlp = spacy.load("en_core_web_sm")
+    nlp = spacy.load("en_core_web_md")
 except: # If they are not present, we must download
     spacy.cli.download("en")
-    spacy.cli.download("en_core_web_sm")
-    nlp = spacy.load("en_core_web_sm")
+    spacy.cli.download("en_core_web_md")
+    nlp = spacy.load("en_core_web_md")
 
 # Process files
 def spacy_ner_from_file(file_location):

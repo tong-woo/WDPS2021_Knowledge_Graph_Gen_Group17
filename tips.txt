@@ -1,3 +1,23 @@
+Supported Python environments:
+https://devcenter.heroku.com/articles/python-support#supported-runtimes
+
+Heroku: 
+https://dashboard.heroku.com/apps/wdps-kg
+
+To deploy:
+Just commit anything to the github repo on the "main" branch
+
+To change neo4j:
+https://dashboard.heroku.com/apps/wdps-kg/settings
+Config Vars > Reveal Config Vars > Delete
+
+To test pipeline:
+python pipeline.py "book.txt" "Harry Potter"
+
+If you want to add a library:
+Add it also in the requirements.txt!
+
+
 Creating nodes with properties
 https://neo4j.com/docs/cypher-manual/current/clauses/create/#create-create-node-and-add-labels-and-properties
 

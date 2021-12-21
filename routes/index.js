@@ -16,8 +16,11 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage });
 
-const driver = neo4j.driver('bolt://3.87.72.8:7687',
-                  neo4j.auth.basic('neo4j', 'cardboard-properties-beaches'), 
+const driver = neo4j.driver(process.env.NEO_HOST || 'bolt://3.87.72.8:7687',
+                  neo4j.auth.basic(
+                    process.env.NEO_USER || 'neo4j', 
+                    process.env.NEO_PASS || 'cardboard-properties-beaches'
+                  ), 
                   {/* encrypted: 'ENCRYPTION_OFF' */});
 
 const session = driver.session({database:"neo4j"});

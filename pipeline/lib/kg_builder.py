@@ -1,9 +1,18 @@
 # pip3 install neo4j-driver
 from neo4j import GraphDatabase, basic_auth
 
+try:
+    NEO_HOST = os.environ['NEO_HOST']
+    NEO_USER = os.environ['NEO_USER']
+    NEO_PASS = os.environ['NEO_PASS']
+except:
+    NEO_HOST = "bolt://3.87.72.8:7687"
+    NEO_USER = "neo4j"
+    NEO_PASS = "cardboard-properties-beaches"
+
 driver = GraphDatabase.driver(
-    "bolt://3.87.72.8:7687",
-    auth=basic_auth("neo4j", "cardboard-properties-beaches"))
+    NEO_HOST,
+    auth=basic_auth(NEO_USER, NEO_PASS))
 
 def chunks(lst, n):
     """Yield successive n-sized chunks from lst."""
