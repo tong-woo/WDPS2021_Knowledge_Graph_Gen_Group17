@@ -1,81 +1,127 @@
-#!/usr/bin/python
-# -*- coding: iso-8859-15 -*-
 """
 @author Group 17-Tong Wu(t3.wu@student.vu.nl 2734542)
-@Create 11-14-2021 16:00 PM
-This is a NER Candidate used in wdps assignment1 Entity linker
-Spacy NER
+@Create 18-12-2021 21:37 PM
+OpenIE program for extracting entity relations in the book "Harry Potter and the Deathly Hallows"
+StanfordCoreNLP-open ie execution
 """
+from openie import StanfordOpenIE
 import spacy
 
-"""
-PERSON:      People, including fictional.
-NORP:        Nationalities or religious or political groups.
-FAC:         Buildings, airports, highways, bridges, etc.
-ORG:         Companies, agencies, institutions, etc.
-GPE:         Countries, cities, states.
-LOC:         Non-GPE locations, mountain ranges, bodies of water.
-PRODUCT:     Objects, vehicles, foods, etc. (Not services.)
-EVENT:       Named hurricanes, battles, wars, sports events, etc.
-WORK_OF_ART: Titles of books, songs, etc.
-LAW:         Named documents made into laws.
-LANGUAGE:    Any named language.
-DATE:        Absolute or relative dates or periods.
-TIME:        Times smaller than a day.
-PERCENT:     Percentage, including ”%“.
-MONEY:       Monetary values, including unit.
-QUANTITY:    Measurements, as of weight or distance.
-ORDINAL:     “first”, “second”, etc.
-CARDINAL:    Numerals that do not fall under another type.
-"""
-# Load English tokenizer, tagger, parser and NER
+
+# https://stanfordnlp.github.io/CoreNLP/openie.html#api
+# Default value of openie.affinity_probability_cap was 1/3.
+properties = {
+    'openie.affinity_probability_cap': 2 / 3,
+}
+triple_num = 0
+
 try:
     nlp = spacy.load("en_core_web_md")
-except: # If they are not present, we must download
+    nlp.max_length = 2000000
+except:  # If they are not present, we must download
     spacy.cli.download("en")
     spacy.cli.download("en_core_web_md")
     nlp = spacy.load("en_core_web_md")
 
-# Process files
-def spacy_ner_from_file(file_location):
-    with open(file_location) as sample:
-        doc = nlp(sample.read())
-        # Noun_phrases = [chunk.text for chunk in doc.noun_chunks]
-        # Verbs = [token.lemma_ for token in doc if token.pos_ == "VERB"]
-        entities_list = doc.ents
-    return entities_list
 
-# Process text
-def spacy_ner_from_text(raw_text):
-    if (raw_text == None or len(raw_text) < 1):
-        return None
-    doc = nlp(raw_text)
-    # Noun_phrases = [chunk.text for chunk in doc.noun_chunks]
-    # Verbs = [token.lemma_ for token in doc if token.pos_ == "VERB"]
-    entities_list = doc.ents
-    return entities_list
+# use a string returned by text cleaner as variable
+def spacy_ner(book_string):
+    doc = nlp(book_string)
+    ent_list = doc.ents
+    return ent_list
 
-# Convert entities list to a dictionary like format
-def spacy_dictionary(entities_list):
-    dic = {}
-    i = 0
-    for entity in entities_list:
-        i += 1
-        dic['Entity {}'.format(i)] = (entity.text, entity.label_, entity.vector)
-    return dic
 
-# Receive a piece of text and returns spaCy recognized entities
-def parse_entities(raw_text):
-    entities_list = []
-    text_splitted = raw_text.split('\n') # We split webpages paragraphs for spaCy to have better accuracy
-    for segment in text_splitted:
-        # We ignore paragraphs of the webpage with less than 5 characters
-        if (len(segment) < 5):
-            continue
-        segment_entities_list = spacy_ner_from_text(segment)
-        if segment_entities_list != None and len(segment_entities_list) > 0:
-            entities_list += segment_entities_list
-    entities_list = spacy_ner_from_text(raw_text)
-    if (entities_list == None or len(entities_list) < 1):
-        return None
-    return spacy_dictionary(entities_list)
+def get_entity_list(ent_list):
+    ent_text_list = []
+    for ent in ent_list:
+        if ent.text not in ent_text_list and ent.label_ == 'PERSON':
+            ent_text_list.append(ent.text)
+    return ent_text_list
+
+
+def filter_relation(triple):
+    bad_char = '’s'
+    bad_quo = '’'
+    relation_list = triple['relation'].split()
+    if triple['relation'] != bad_char and bad_char in relation_list:
+        relation_list.remove(bad_char)
+        triple['relation'] = '_'.join(relation_list)
+    elif triple['relation'] == bad_quo or triple['relation'] == '' or triple['relation'] == bad_char:
+        triple['relation'] = ''
+    elif bad_char not in relation_list:
+        triple['relation'] = '_'.join(relation_list)
+    return triple['relation'].upper()
+
+
+def filter_relation_by_POS(triple):
+    bad_char = '’s'
+    bad_quo = '’'
+    doc = nlp(triple['relation'].lower())
+    relation_list = []
+    accept_list = ['VERB', 'NOUN', 'PROPN', 'PART']
+    for tok in doc:
+        if tok.pos_ in accept_list and tok.text != 'is':
+            relation_list.append(tok.lemma_) if tok.lemma_ != bad_quo else relation_list.append(bad_char)
+        triple['relation'] = ' '.join(relation_list)
+    return triple
+
+
+def get_triples(start, end, book_text, entity_filter_list):
+    with StanfordOpenIE(properties=properties) as client:
+        corpus = book_text.replace('\n', ' ').replace('\r', '')
+        """
+        There are 812347 characters in the book, but there will 
+        be jvm heap size error if process all characters one time,
+        for now the maximum size of characters that we can put in 
+        processing corpus is 300000 based on my testing
+        """
+        triples_corpus = client.annotate(corpus[start:end])
+        triple_list = []
+        final_triples = []
+        for triple in triples_corpus:
+            if triple['subject'] in entity_filter_list and triple['object'] in entity_filter_list:
+                # filter relations
+                triple = filter_relation_by_POS(triple)
+                triple['relation'] = filter_relation(triple)
+                if len(triple['relation']) != 0:
+                    triple_list.append(triple)
+        # remove duplicate triples from the triple_list
+        tem_set = set()
+        for tri in triple_list:
+            t = tuple(tri.items())
+            if t not in tem_set:
+                tem_set.add(t)
+                final_triples.append(tri)
+    return final_triples
+
+
+def generate_result(cleaned_text, entity_filter_list):
+    final_triples = []
+    num_of_characters = len(cleaned_text)
+    times = num_of_characters // 100000
+    if times != 0:
+        for i in range(times + 1):
+            start = i * 100000
+            end = (i + 1) * 100000
+            print("Start processing part %s of the book, totally %s characters" % (i + 1, end - start))
+            current_len = len(final_triples)
+            if end < num_of_characters:
+                final_triples.extend(get_triples(start, end, cleaned_text, entity_filter_list))
+            else:
+                final_triples.extend(get_triples(start, num_of_characters, cleaned_text, entity_filter_list))
+            print("Part %s are successfully process, %s relation triples are extracted" % (
+                i + 1, len(final_triples) - current_len))
+    else:
+        final_triples.extend(get_triples(0, num_of_characters, cleaned_text, entity_filter_list))
+    return final_triples
+
+
+def parse_relation(cleaned_text):
+    entities = spacy_ner(cleaned_text)
+    entity_text_list = get_entity_list(entities)
+    result = generate_result(cleaned_text, entity_text_list)
+    return result
+
+
+# relations = parse_relation("../books/stopwords_removed_Book.txt")
+

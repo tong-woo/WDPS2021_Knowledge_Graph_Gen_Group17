@@ -1,42 +1,29 @@
-import re
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+import requests
 
-def remove_hashtags(text):
-    regex = r"(?:\#+[\w_]+[\w\'_\-]*[\w_]+)" # hash-tags
-    text = re.sub(regex, ' ', text)
-    return text
 
-def remove_mentions(text):
-    regex = r'@[^\s]+' #remove @-mentions
-    text = re.sub(regex, ' ', text)
-    return text
+def stopwords_removal(raw_text):
+    stopwords_list = requests.get("https://gist.githubusercontent.com/rg089/35e00abf8941d72d419224cfd5b5925d/raw"
+                                  "/12d899b70156fd0041fa9778d657330b024b959c/stopwords.txt").content
+    stop_words_2 = set(stopwords_list.decode().splitlines())
+    stop_words_1 = set(stopwords.words('english'))
+    # word_tokenize accepts
+    # a string as an input, not a file.
+    stop_word_list = stop_words_1 | stop_words_2
 
-def remove_urls(text):
-    regex = r'http\S+' #remove url
-    text = re.sub(regex, ' ', text)
-    return text
+    # file1 = open("Harry Potter and the Deathly Hallows.txt")
 
-def remove_special_characters(text):
-    text_filtered = []
-    text_splitted = text.split("\n")
-    for segment in text_splitted: # We filter out segments of text with less than 10 characters
-        if len(segment) < 10:
-            continue
-        text_filtered.append(segment)
-    text = "\n".join(text_filtered)
-    text = text.replace("\t", " ")
-    text = re.sub(' +', ' ', text)
-    return text
+    # Use this to read file content as a stream output and output a stop-words removed book
+    # line = text.read()
+    words = [word for word in raw_text.split() if word.lower() not in stop_word_list]
+    return " ".join(words)
+
 
 def clean_text(raw_text):
+    text = ""
     try:
-        text = remove_urls(raw_text)
-        text = remove_mentions(text)
-        text = remove_hashtags(text)
-        try:
-            text = remove_special_characters(text)
-        except Exception as e:
-            print ("Catched exception", e)
-            text = text
-    except: 
-        text = raw_text
+        text = stopwords_removal(raw_text)
+    except Exception as e:
+        print("Catched exception", e)
     return text
