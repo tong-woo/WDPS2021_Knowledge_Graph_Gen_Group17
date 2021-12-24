@@ -34,8 +34,6 @@ if __name__ == '__main__':
         print("File opened successfully!")
         f.close()
 
-        # Co-reference
-
         # Clean text
         cleaned_text = _clean_text(raw_text)
         print('Stopwords removed!')
@@ -45,13 +43,13 @@ if __name__ == '__main__':
         for item in triplets:
             print(item)
         print('Found %s triples in the filtered corpus.\n' % len(triplets))
-        print('Triplets generated!')
+
 
         if (triplets == None or len(triplets) < 1):
-            print('No entities were found')
+            print('No person reletions were found')
 
         _build_graph(triplets, book_name)
-        print('Entities were added to the knowledge graph')
+
     except Exception as e:
         traceback.print_exc()
         print(e)
