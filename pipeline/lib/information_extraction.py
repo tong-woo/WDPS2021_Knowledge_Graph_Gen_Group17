@@ -40,16 +40,16 @@ def get_entity_list(ent_list):
 
 
 def filter_relation(triple):
-    bad_char = '’s'
-    bad_quo = '’'
+    bad_char = ['’s', '\'s', '’']
     relation_list = triple['relation'].split()
-    if triple['relation'] != bad_char and bad_char in relation_list:
-        relation_list.remove(bad_char)
-        triple['relation'] = '_'.join(relation_list)
-    elif triple['relation'] == bad_quo or triple['relation'] == '' or triple['relation'] == bad_char:
-        triple['relation'] = ''
-    elif bad_char not in relation_list:
-        triple['relation'] = '_'.join(relation_list)
+    for char in bad_char:
+        if triple['relation'] not in bad_char and char in relation_list:
+            relation_list.remove(char)
+            triple['relation'] = '_'.join(relation_list)
+        elif triple['relation'] == char or triple['relation'] == '':
+            triple['relation'] = ''
+        elif char not in relation_list:
+            triple['relation'] = '_'.join(relation_list)
     return triple['relation'].upper()
 
 
@@ -69,12 +69,7 @@ def filter_relation_by_POS(triple):
 def get_triples(start, end, book_text, entity_filter_list):
     with StanfordOpenIE(properties=properties) as client:
         corpus = book_text.replace('\n', ' ').replace('\r', '')
-        """
-        There are 812347 characters in the book, but there will 
-        be jvm heap size error if process all characters one time,
-        for now the maximum size of characters that we can put in 
-        processing corpus is 300000 based on my testing
-        """
+
         triples_corpus = client.annotate(corpus[start:end])
         triple_list = []
         final_triples = []
