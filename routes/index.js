@@ -88,7 +88,7 @@ router.get('/query/entity/', function(req, res, next){
 
   // QUERY NEO4J for entityId relationships
   const query = `  
-    MATCH (p {pid: ${entityId}})-[r]->(rel)
+    MATCH (p {pid: ${entityId}})-[r]-(rel)
     WHERE p.book = "${bookId}"
     RETURN r, rel, p
   `;
